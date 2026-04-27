@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Whirlpool</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-deep:     #05080f;
+      --bg-card:     rgba(8, 18, 38, 0.72);
+      --teal:        #00cfc0;
+      --teal-dim:    rgba(0, 207, 192, 0.18);
+      --amber:       #ff9040;
+      --amber-dim:   rgba(255, 144, 64, 0.14);
+      --gold:        #fff0a0;
+      --gold-glow:   rgba(255, 240, 120, 0.4);
+      --danger:      #ff4466;
+      --text-1:      #dff0f4;
+      --text-2:      rgba(223, 240, 244, 0.48);
+      --text-3:      rgba(223, 240, 244, 0.22);
+      --border:      rgba(0, 207, 192, 0.14);
+    }
+
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+    html { height: 100%; }
+    body { font-family:'DM Sans',sans-serif; background:var(--bg-deep); color:var(--text-1); min-height:100vh; overflow-x:hidden; }
+
+    /* ── BACKGROUND ── */
+    .scene { position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none; }
+    .scene-gradient {
+      position:absolute; inset:0;
+      background:
+        radial-gradient(ellipse 90% 55% at 15% 85%, rgba(0,110,160,.14) 0%, transparent 55%),
+        radial-gradient(ellipse 60% 45% at 85% 15%, rgba(0,60,110,.16) 0%, transparent 50%),
+        radial-gradient(ellipse 100% 60% at 50% 100%, rgba(0,80,120,.1) 0%, transparent 60%),
+        linear-gradient(170deg,#05080f 0%,#07101e 60%,#060c18 100%);
+    }
+    .scene-lines {
+      position:absolute; inset:0;
+      background-image:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,207,192,.012) 3px,rgba(0,207,192,.012) 4px);
+    }
+    .scene-pool {
+      position:absolute; bottom:-80px; left:-10%; width:120%; height:260px;
+      background:radial-gradient(ellipse 70% 60% at 50% 100%,rgba(0,150,200,.09) 0%,transparent 70%);
+      animation:poolPulse 6s ease-in-out infinite alternate;
+    }
+    @keyframes poolPulse { from{opacity:.6;transform:scaleX(1)} to{opacity:1;transform:scaleX(1.04)} }
+
+    .bubbles { position:absolute; inset:0; }
+    .bubble {
+      position:absolute; bottom:-30px; border-radius:50%;
+      background:radial-gradient(circle at 38% 32%,rgba(0,207,192,.35),rgba(0,120,200,.08));
+      border:1px solid rgba(0,207,192,.22);
+      animation:bubbleRise linear infinite;
+    }
+    .bubble:nth-child(1)  {width:5px; height:5px; left:6%;  animation-duration:10s; animation-delay:0s}
+    .bubble:nth-child(2)  {width:8px; height:8px; left:16%; animation-duration:14s; animation-delay:2.3s}
+    .bubble:nth-child(3)  {width:4px; height:4px; left:26%; animation-duration:9s;  animation-delay:.8s}
+    .bubble:nth-child(4)  {width:11px;height:11px;left:36%; animation-duration:17s; animation-delay:4s}
+    .bubble:nth-child(5)  {width:5px; height:5px; left:45%; animation-duration:11s; animation-delay:1.2s}
+    .bubble:nth-child(6)  {width:7px; height:7px; left:55%; animation-duration:13s; animation-delay:3.5s}
+    .bubble:nth-child(7)  {width:9px; height:9px; left:65%; animation-duration:16s; animation-delay:1.8s}
+    .bubble:nth-child(8)  {width:4px; height:4px; left:74%; animation-duration:8s;  animation-delay:5.2s}
+    .bubble:nth-child(9)  {width:6px; height:6px; left:84%; animation-duration:12s; animation-delay:2.8s}
+    .bubble:nth-child(10) {width:10px;height:10px;left:93%; animation-duration:15s; animation-delay:.4s}
+    .bubble:nth-child(11) {width:4px; height:4px; left:11%; animation-duration:11s; animation-delay:6s}
+    .bubble:nth-child(12) {width:6px; height:6px; left:79%; animation-duration:13s; animation-delay:7s}
+    @keyframes bubbleRise {
+      0%  {transform:translateY(0) translateX(0);opacity:0}
+      8%  {opacity:.9}
+      88% {opacity:.5}
+      100%{transform:translateY(-105vh) translateX(18px);opacity:0}
+    }
+
+    /* ── APP SHELL ── */
+    .app { position:relative; z-index:1; max-width:460px; margin:0 auto; padding:28px 18px 56px; min-height:100vh; }
+
+    /* ── HEADER ── */
+    .header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:28px; }
+    .brand-name { font-family:'Cormorant Garamond',serif; font-size:32px; font-weight:300; letter-spacing:.18em; text-transform:uppercase; color:var(--text-1); line-height:1; }
+    .brand-tag  { font-size:9.5px; font-weight:500; letter-spacing:.32em; text-transform:uppercase; color:var(--teal); margin-top:5px; opacity:.75; }
+    .hdr-actions { display:flex; gap:8px; padding-top:4px; }
+    .icon-btn {
+      width:38px; height:38px; border-radius:50%;
+      background:rgba(0,207,192,.07); border:1px solid var(--border);
+      color:var(--text-2); display:flex; align-items:center; justify-content:center;
+      cursor:pointer; font-size:15px; backdrop-filter:blur(14px); transition:all .22s;
+    }
+    .icon-btn:hover,.icon-btn.active { background:rgba(0,207,192,.13); border-color:rgba(0,207,192,.4); color:var(--teal); }
+
+    /* ── SETTINGS ── */
+    .settings-panel { overflow:hidden; max-height:0; transition:max-height .35s ease,margin .35s ease; margin-bottom:0; }
+    .settings-panel.open { max-height:90px; margin-bottom:20px; }
+    .settings-inner { background:var(--bg-card); border:1px solid var(--border); border-radius:18px; padding:18px 20px; backdrop-filter:blur(24px); }
+    .field-label { font-size:9px; font-weight:600; letter-spacing:.28em; text-transform:uppercase; color:var(--teal); margin-bottom:9px; display:block; }
+    .field-input {
+      width:100%; background:rgba(0,0,0,.35); border:1px solid rgba(255,255,255,.08);
+      border-radius:10px; padding:11px 14px; color:var(--text-1);
+      font-family:'DM Sans',sans-serif; font-size:13px; outline:none; transition:border-color .2s;
+    }
+    .field-input:focus { border-color:rgba(0,207,192,.5); }
+
+    /* ── STATUS ROW ── */
+    .status-row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:20px; }
+    .status-chip {
+      display:inline-flex; align-items:center; gap:7px; padding:6px 13px 6px 10px;
+      border-radius:100px; font-size:10.5px; font-weight:500; letter-spacing:.07em;
+      text-transform:uppercase; border:1px solid transparent; transition:all .4s;
+    }
+    .status-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+    .status-chip.connected { background:rgba(0,207,192,.1); border-color:rgba(0,207,192,.28); color:var(--teal); }
+    .status-chip.connected .status-dot { background:var(--teal); box-shadow:0 0 6px var(--teal); animation:dotPulse 2.4s ease-in-out infinite; }
+    .status-chip.error { background:rgba(255,68,102,.1); border-color:rgba(255,68,102,.28); color:var(--danger); }
+    .status-chip.error .status-dot { background:var(--danger); }
+    .status-chip.idle { background:rgba(255,255,255,.04); border-color:rgba(255,255,255,.09); color:var(--text-2); }
+    .status-chip.idle .status-dot { background:var(--text-3); }
+    @keyframes dotPulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+    .heat-chip { display:inline-flex; align-items:center; gap:6px; padding:6px 13px; border-radius:100px; font-size:10.5px; font-weight:500; letter-spacing:.07em; text-transform:uppercase; border:1px solid transparent; transition:all .4s; }
+    .heat-chip.on { background:var(--amber-dim); border-color:rgba(255,144,64,.32); color:var(--amber); animation:heatGlow 2.5s ease-in-out infinite alternate; }
+    .heat-chip.off { background:rgba(255,255,255,.04); border-color:rgba(255,255,255,.08); color:var(--text-3); }
+    @keyframes heatGlow { from{box-shadow:none} to{box-shadow:0 0 18px rgba(255,144,64,.22)} }
+
+    /* Thermometer icon */
+    .thermo-icon { display:block; flex-shrink:0; }
+    .thermo-fill { transition:fill .4s, opacity .4s; }
+    .heat-chip.on  .thermo-fill { fill:var(--amber); opacity:1; }
+    .heat-chip.off .thermo-fill { fill:rgba(223,240,244,.22); opacity:.7; }
+    .heat-chip.on  .thermo-bulb { fill:var(--amber); }
+    .heat-chip.off .thermo-bulb { fill:rgba(223,240,244,.22); }
+    .heat-chip.on  .thermo-rise { animation:thermoRise 2s ease-in-out infinite alternate; transform-origin:bottom center; transform-box:fill-box; }
+    @keyframes thermoRise {
+      from { transform:scaleY(.65); }
+      to   { transform:scaleY(1); }
+    }
+    .mode-chip { display:inline-flex; align-items:center; padding:6px 12px; border-radius:100px; font-size:10px; font-weight:500; letter-spacing:.08em; text-transform:uppercase; background:rgba(0,207,192,.07); border:1px solid rgba(0,207,192,.13); color:rgba(0,207,192,.6); }
+
+    /* ── CIRCULAR TEMPERATURE ARC ── */
+    .temp-hero { display:flex; flex-direction:column; align-items:center; padding:4px 0 28px; }
+
+    .arc-wrapper {
+      position:relative;
+      width:270px;   /* bigger circle = more breathing room */
+      height:270px;
+      overflow:visible;
+    }
+
+    #arcSvg {
+      position:absolute; inset:0; width:100%; height:100%;
+      touch-action:none; cursor:grab; overflow:visible;
+    }
+    #arcSvg.dragging { cursor:grabbing; }
+
+    .arc-center {
+      position:absolute; inset:0;
+      display:flex; flex-direction:column;
+      align-items:center; justify-content:center;
+      pointer-events:none; user-select:none; text-align:center;
+    }
+
+    .arc-eyebrow {
+      font-size:8px; font-weight:600; letter-spacing:.3em;
+      text-transform:uppercase; color:var(--text-2); margin-bottom:4px; transition:color .25s;
+    }
+    .arc-eyebrow.live { color:var(--teal); }
+
+    .temp-now {
+      font-family:'Cormorant Garamond',serif;
+      font-size:84px; font-weight:300; line-height:.9;
+      color:var(--text-1); letter-spacing:-.025em; transition:color .3s;
+    }
+    .temp-now sup { font-size:32px; font-weight:300; color:var(--teal); vertical-align:super; line-height:0; margin-left:2px; }
+    .temp-now.live { color:var(--teal); }
+    .arc-wrapper.heating .temp-now:not(.live) { color:#ffe8c0; }
+
+    .arc-sublabel { margin-top:16px; font-size:12px; color:var(--text-2); letter-spacing:.03em; }
+    .arc-sublabel strong { color:var(--teal); font-weight:500; }
+
+    /* ── ROUND CONTROL BUTTONS ── */
+    .ctrl-row {
+      display:flex;
+      justify-content:center;
+      gap:20px;
+      margin-bottom:24px;
+      padding:0 8px;
+    }
+
+    .ctrl-item {
+      display:flex; flex-direction:column; align-items:center; gap:9px;
+    }
+
+    .ctrl-btn {
+      width:90px; height:90px; border-radius:50%;
+      background:radial-gradient(circle at 38% 32%, rgba(14,28,52,.92), rgba(4,8,18,.97));
+      border:2px solid rgba(255,255,255,.1);
+      box-shadow:
+        0 6px 20px rgba(0,0,0,.45),
+        inset 0 1px 0 rgba(255,255,255,.07),
+        inset 0 -1px 0 rgba(0,0,0,.35);
+      cursor:pointer;
+      display:flex; align-items:center; justify-content:center;
+      transition:all .3s ease;
+      position:relative;
+      color:rgba(255,255,255,.22);
+    }
+
+    /* Inner ring */
+    .ctrl-btn::before {
+      content:''; position:absolute;
+      inset:5px; border-radius:50%;
+      border:1px solid rgba(255,255,255,.04);
+      pointer-events:none; transition:border-color .3s;
+    }
+
+    .ctrl-btn:active { transform:scale(.95); }
+
+    /* State: ON (1) */
+    .ctrl-btn.s1 {
+      background:radial-gradient(circle at 38% 32%, rgba(0,55,75,.88), rgba(0,18,35,.96));
+      border-color:rgba(0,207,192,.65);
+      box-shadow:
+        0 0 28px rgba(0,207,192,.32),
+        0 6px 20px rgba(0,0,0,.4),
+        inset 0 0 22px rgba(0,207,192,.14),
+        inset 0 1px 0 rgba(0,207,192,.22);
+      color:var(--teal);
+    }
+    .ctrl-btn.s1::before { border-color:rgba(0,207,192,.18); }
+
+    /* State: HIGH (2) */
+    .ctrl-btn.s2 {
+      background:radial-gradient(circle at 38% 32%, rgba(0,75,95,.9), rgba(0,25,45,.97));
+      border-color:rgba(0,207,192,.9);
+      box-shadow:
+        0 0 46px rgba(0,207,192,.5),
+        0 6px 20px rgba(0,0,0,.4),
+        inset 0 0 30px rgba(0,207,192,.22),
+        inset 0 1px 0 rgba(0,207,192,.3);
+      color:var(--teal);
+    }
+    .ctrl-btn.s2::before { border-color:rgba(0,207,192,.25); }
+
+    /* State: LIGHT ON */
+    .ctrl-btn.lon {
+      background:radial-gradient(circle at 38% 32%, rgba(55,44,0,.85), rgba(18,14,0,.97));
+      border-color:rgba(255,240,100,.72);
+      box-shadow:
+        0 0 36px rgba(255,240,100,.38),
+        0 6px 20px rgba(0,0,0,.4),
+        inset 0 0 26px rgba(255,240,100,.14),
+        inset 0 1px 0 rgba(255,240,100,.25);
+      color:var(--gold);
+    }
+    .ctrl-btn.lon::before { border-color:rgba(255,240,100,.18); }
+
+    /* Fan spin animations */
+    .fan-blades {
+      transform-box:fill-box;
+      transform-origin:center;
+    }
+    .ctrl-btn.s1 .fan-blades { animation:fanSpin 2.2s linear infinite; }
+    .ctrl-btn.s2 .fan-blades { animation:fanSpin 0.65s linear infinite; }
+
+    @keyframes fanSpin { to { transform:rotate(360deg); } }
+
+    /* Sun pulse when light on */
+    .ctrl-btn.lon .sun-icon { animation:sunPulse 2s ease-in-out infinite alternate; }
+    @keyframes sunPulse { from{opacity:.8;transform:scale(.95)} to{opacity:1;transform:scale(1.05)} }
+    .sun-icon { transform-box:fill-box; transform-origin:center; }
+
+    .ctrl-name {
+      font-size:10px; font-weight:600; letter-spacing:.14em;
+      text-transform:uppercase; color:var(--text-2);
+    }
+
+    .ctrl-state-lbl {
+      font-size:10px; font-weight:700; letter-spacing:.1em;
+      text-transform:uppercase; color:var(--text-3);
+      transition:color .3s; min-width:30px; text-align:center;
+    }
+    .ctrl-state-lbl.teal { color:var(--teal); }
+    .ctrl-state-lbl.gold { color:var(--gold); }
+
+    /* ── ACTION ROW ── */
+    .action-row { display:flex; gap:10px; margin-top:6px; }
+    .btn-refresh {
+      flex:1; padding:17px; border-radius:16px;
+      background:rgba(0,207,192,.08); border:1px solid rgba(0,207,192,.2);
+      color:var(--teal); font-family:'DM Sans',sans-serif;
+      font-size:11.5px; font-weight:600; letter-spacing:.16em; text-transform:uppercase;
+      cursor:pointer; display:flex; align-items:center; justify-content:center; gap:9px; transition:all .22s;
+    }
+    .btn-refresh:hover { background:rgba(0,207,192,.14); border-color:rgba(0,207,192,.45); box-shadow:0 0 28px rgba(0,207,192,.1); }
+    .btn-refresh:active { transform:scale(.98); }
+    .refresh-ico { font-size:16px; display:inline-block; }
+    .btn-refresh.spinning .refresh-ico { animation:spinIcon .8s linear infinite; }
+    @keyframes spinIcon { to{transform:rotate(360deg)} }
+
+    /* ── FOOTER ── */
+    .footer-info { text-align:center; margin-top:18px; display:flex; flex-direction:column; gap:6px; }
+    .fault-line { font-size:12px; color:var(--text-3); letter-spacing:.04em; min-height:16px; transition:color .3s; }
+    .fault-line.err { color:var(--danger); }
+    .update-line { font-size:10px; color:var(--text-3); letter-spacing:.08em; }
+
+    /* ── TOAST ── */
+    .toast {
+      position:fixed; bottom:28px; left:50%;
+      transform:translateX(-50%) translateY(80px);
+      background:rgba(4,12,28,.96); border:1px solid var(--border);
+      border-radius:100px; padding:11px 22px;
+      font-size:12.5px; font-weight:500; letter-spacing:.04em; color:var(--text-1);
+      backdrop-filter:blur(20px); transition:transform .32s cubic-bezier(.34,1.56,.64,1);
+      z-index:200; white-space:nowrap; pointer-events:none;
+      box-shadow:0 8px 32px rgba(0,0,0,.5);
+    }
+    .toast.show { transform:translateX(-50%) translateY(0); }
+    .toast.ok   { border-color:rgba(0,207,192,.4); color:var(--teal); }
+    .toast.err  { border-color:rgba(255,68,102,.4); color:var(--danger); }
+
+    @media(max-width:380px) {
+      .app { padding:20px 12px 48px; }
+      .temp-now { font-size:70px; }
+      .arc-wrapper { width:230px; height:230px; }
+      .ctrl-btn { width:78px; height:78px; }
+      .ctrl-row { gap:14px; }
+    }
+    @media(min-width:600px) { .app { padding-top:40px; } }
+  </style>
+</head>
+<body>
+
+<div class="scene">
+  <div class="scene-gradient"></div>
+  <div class="scene-lines"></div>
+  <div class="scene-pool"></div>
+  <div class="bubbles">
+    <div class="bubble"></div><div class="bubble"></div><div class="bubble"></div>
+    <div class="bubble"></div><div class="bubble"></div><div class="bubble"></div>
+    <div class="bubble"></div><div class="bubble"></div><div class="bubble"></div>
+    <div class="bubble"></div><div class="bubble"></div><div class="bubble"></div>
+  </div>
+</div>
+
+<div class="app">
+
+  <!-- Header -->
+  <div class="header">
+    <div>
+      <div class="brand-name">Whirlpool</div>
+      <div class="brand-tag">Balboa Control</div>
+    </div>
+    <div class="hdr-actions">
+      <button class="icon-btn" id="settingsBtn" onclick="toggleSettings()" title="Einstellungen">⚙</button>
+    </div>
+  </div>
+
+  <!-- Settings -->
+  <div class="settings-panel" id="settingsPanel">
+    <div class="settings-inner">
+      <label class="field-label" for="fhemUrlInput">FHEM API URL</label>
+      <input class="field-input" type="url" id="fhemUrlInput"
+             placeholder="/fhem" oninput="saveSettings()">
+    </div>
+  </div>
+
+  <!-- Status -->
+  <div class="status-row">
+    <div class="status-chip idle" id="statusChip">
+      <div class="status-dot"></div>
+      <span id="statusLabel">Verbinde…</span>
+    </div>
+    <div class="heat-chip off" id="heatChip">
+      <!-- Thermometer SVG -->
+      <svg class="thermo-icon" width="13" height="21" viewBox="0 0 13 21" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Tube outer -->
+        <rect x="3.75" y="0.75" width="5.5" height="12.5" rx="2.75" stroke="currentColor" stroke-width="1.5"/>
+        <!-- Mercury column (rises when heating) -->
+        <rect class="thermo-fill thermo-rise" x="5.25" y="7" width="2.5" height="6.5" rx="1.25"/>
+        <!-- Bulb outer -->
+        <circle cx="6.5" cy="17" r="3.75" stroke="currentColor" stroke-width="1.5"/>
+        <!-- Bulb fill -->
+        <circle class="thermo-fill thermo-bulb" cx="6.5" cy="17" r="2.4"/>
+      </svg>
+      <span id="heatLabel">Standby</span>
+    </div>
+    <div class="mode-chip" id="modeChip" style="display:none"></div>
+  </div>
+
+  <!-- Circular temperature arc -->
+  <div class="temp-hero">
+    <div class="arc-wrapper" id="arcWrapper">
+
+      <svg id="arcSvg" viewBox="0 0 220 220">
+        <defs>
+          <filter id="fThumb" x="-80%" y="-80%" width="260%" height="260%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="5" result="b"/>
+            <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+          <filter id="fFill" x="-15%" y="-15%" width="130%" height="130%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="2.5" result="b"/>
+            <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+
+        <!-- Inner decorative ring -->
+        <circle cx="110" cy="110" r="70" fill="none" stroke="rgba(0,207,192,.06)" stroke-width="1"/>
+
+        <!-- Background track: 270° CCW arc, upper-left(225°) → bottom → upper-right(315°) -->
+        <path id="arcTrack"
+          d="M 42.83 42.83 A 95 95 0 1 0 177.17 42.83"
+          fill="none" stroke="rgba(255,255,255,.09)" stroke-width="5" stroke-linecap="round"/>
+
+        <!-- Reference ticks -->
+        <circle cx="42.83"  cy="177.17" r="2.5" fill="rgba(255,255,255,.18)"/><!-- 20° -->
+        <circle cx="110"    cy="205"    r="2.5" fill="rgba(255,255,255,.18)"/><!-- 25° -->
+        <circle cx="177.17" cy="177.17" r="2.5" fill="rgba(255,255,255,.18)"/><!-- 30° -->
+
+        <!-- Labels -->
+        <text x="12"  y="48"  fill="rgba(223,240,244,.32)" font-size="10" font-family="DM Sans,sans-serif">10°</text>
+        <text x="208" y="48"  fill="rgba(223,240,244,.32)" font-size="10" font-family="DM Sans,sans-serif" text-anchor="end">40°</text>
+        <text x="16"  y="185" fill="rgba(223,240,244,.18)" font-size="9"  font-family="DM Sans,sans-serif">20°</text>
+        <text x="110" y="218" fill="rgba(223,240,244,.18)" font-size="9"  font-family="DM Sans,sans-serif" text-anchor="middle">25°</text>
+        <text x="204" y="185" fill="rgba(223,240,244,.18)" font-size="9"  font-family="DM Sans,sans-serif" text-anchor="end">30°</text>
+
+        <!-- Teal fill arc (dynamic) -->
+        <path id="arcFill"
+          d="" fill="none" stroke="#00cfc0" stroke-width="5" stroke-linecap="round"
+          filter="url(#fFill)"/>
+
+        <!-- Start/end dots -->
+        <circle cx="42.83"  cy="42.83" r="3.5" fill="rgba(0,207,192,.35)"/>
+        <circle cx="177.17" cy="42.83" r="3.5" fill="rgba(0,207,192,.2)"/>
+
+        <!-- Draggable thumb -->
+        <circle id="arcThumb" cx="42.83" cy="42.83" r="11"
+          fill="#00cfc0" filter="url(#fThumb)"/>
+
+        <!-- Invisible wide hit area for easier touch -->
+        <path d="M 42.83 42.83 A 95 95 0 1 0 177.17 42.83"
+          fill="none" stroke="transparent" stroke-width="44" stroke-linecap="round"/>
+      </svg>
+
+      <div class="arc-center">
+        <div class="arc-eyebrow" id="arcEyebrow">Ist-Temperatur</div>
+        <div class="temp-now" id="tempNow">–<sup>°</sup></div>
+        <div class="arc-sublabel" id="arcSublabel">Ziel: <strong>–</strong></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── 3 CIRCULAR CONTROL BUTTONS ── -->
+  <div class="ctrl-row">
+
+    <!-- Pump 1 -->
+    <div class="ctrl-item">
+      <button class="ctrl-btn s0" id="btn-pump1" onclick="cyclePump('pump1')">
+        <!-- Propeller / fan icon -->
+        <svg width="46" height="46" viewBox="0 0 50 50">
+          <g class="fan-blades" fill="currentColor">
+            <!-- 3 curved blades, each rotated 120° -->
+            <path d="M25 25 Q21 19 19 13 Q24 8 29 13 Q31 19 25 25 Z"/>
+            <path d="M25 25 Q21 19 19 13 Q24 8 29 13 Q31 19 25 25 Z" transform="rotate(120 25 25)"/>
+            <path d="M25 25 Q21 19 19 13 Q24 8 29 13 Q31 19 25 25 Z" transform="rotate(240 25 25)"/>
+            <!-- Hub -->
+            <circle cx="25" cy="25" r="4.5"/>
+          </g>
+        </svg>
+      </button>
+      <div class="ctrl-name">Pumpe 1</div>
+      <div class="ctrl-state-lbl" id="slbl-pump1">Aus</div>
+    </div>
+
+    <!-- Pump 2 -->
+    <div class="ctrl-item">
+      <button class="ctrl-btn s0" id="btn-pump2" onclick="cyclePump('pump2')">
+        <svg width="46" height="46" viewBox="0 0 50 50">
+          <g class="fan-blades" fill="currentColor">
+            <path d="M25 25 Q21 19 19 13 Q24 8 29 13 Q31 19 25 25 Z"/>
+            <path d="M25 25 Q21 19 19 13 Q24 8 29 13 Q31 19 25 25 Z" transform="rotate(120 25 25)"/>
+            <path d="M25 25 Q21 19 19 13 Q24 8 29 13 Q31 19 25 25 Z" transform="rotate(240 25 25)"/>
+            <circle cx="25" cy="25" r="4.5"/>
+          </g>
+        </svg>
+      </button>
+      <div class="ctrl-name">Pumpe 2</div>
+      <div class="ctrl-state-lbl" id="slbl-pump2">Aus</div>
+    </div>
+
+    <!-- Light -->
+    <div class="ctrl-item">
+      <button class="ctrl-btn s0" id="btn-light" onclick="cycleLight()">
+        <!-- Sun / lamp icon -->
+        <svg width="46" height="46" viewBox="0 0 50 50">
+          <g class="sun-icon" fill="currentColor">
+            <!-- Center circle -->
+            <circle cx="25" cy="25" r="8"/>
+            <!-- 8 rays -->
+            <rect x="23.5" y="6"  width="3" height="6"  rx="1.5"/>
+            <rect x="23.5" y="38" width="3" height="6"  rx="1.5"/>
+            <rect x="6"  y="23.5" width="6" height="3"  rx="1.5"/>
+            <rect x="38" y="23.5" width="6" height="3"  rx="1.5"/>
+            <!-- Diagonal rays -->
+            <rect x="23.5" y="6" width="3" height="6" rx="1.5" transform="rotate(45 25 25)"/>
+            <rect x="23.5" y="6" width="3" height="6" rx="1.5" transform="rotate(135 25 25)"/>
+            <rect x="23.5" y="6" width="3" height="6" rx="1.5" transform="rotate(225 25 25)"/>
+            <rect x="23.5" y="6" width="3" height="6" rx="1.5" transform="rotate(315 25 25)"/>
+          </g>
+        </svg>
+      </button>
+      <div class="ctrl-name">Licht</div>
+      <div class="ctrl-state-lbl" id="slbl-light">Aus</div>
+    </div>
+
+  </div>
+
+  <!-- Refresh -->
+  <div class="action-row">
+    <button class="btn-refresh" id="refreshBtn" onclick="poll()">
+      <span class="refresh-ico" id="refreshIco">↻</span>
+      <span>Aktualisieren</span>
+    </button>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer-info">
+    <div class="fault-line" id="faultLine"></div>
+    <div class="update-line" id="updateLine"></div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  /* ═══════ STATE ═══════ */
+  let fhemUrl    = localStorage.getItem('fhemUrl') || '/fhem';
+  let csrfToken  = '';
+  let pumpState  = { pump1: 0, pump2: 0 };
+  let lightVal   = 0;
+  let pollHandle = null;
+  let isDragging = false;
+  let currentSetT = 36;
+  let currentIstT = null;
+
+  document.getElementById('fhemUrlInput').value = fhemUrl;
+
+  /* ═══════ ARC GEOMETRY ═══════
+     270° CCW arc: SVG 225° (upper-left) → 315° (upper-right)
+     SVG convention: 0°=right, positive=clockwise              */
+  const CX = 110, CY = 110, R = 95;
+  const ANG_START = 225, ARC_SPAN = 270;
+  const T_MIN = 10, T_MAX = 40;
+
+  function tempToAngle(t) {
+    const p = Math.max(0, Math.min(1, (t - T_MIN) / (T_MAX - T_MIN)));
+    return ((ANG_START - p * ARC_SPAN) + 360) % 360;
+  }
+
+  function angleToTemp(a) {
+    let delta = ((ANG_START - a) + 360) % 360;
+    if (delta > ARC_SPAN) delta = (delta - ARC_SPAN) < (360 - ARC_SPAN) / 2 ? ARC_SPAN : 0;
+    return Math.round((T_MIN + (delta / ARC_SPAN) * (T_MAX - T_MIN)) * 2) / 2;
+  }
+
+  function polar(deg, r) {
+    const rad = deg * Math.PI / 180;
+    return { x: CX + r * Math.cos(rad), y: CY + r * Math.sin(rad) };
+  }
+
+  function arcPath(fromAng, toAng, r) {
+    const s = polar(fromAng, r), e = polar(toAng, r);
+    const span = ((fromAng - toAng) + 360) % 360;
+    return `M ${s.x.toFixed(2)} ${s.y.toFixed(2)} A ${r} ${r} 0 ${span > 180 ? 1 : 0} 0 ${e.x.toFixed(2)} ${e.y.toFixed(2)}`;
+  }
+
+  function renderArc(temp) {
+    const angle = tempToAngle(temp);
+    const pt    = polar(angle, R);
+    const p     = (temp - T_MIN) / (T_MAX - T_MIN);
+    document.getElementById('arcThumb').setAttribute('cx', pt.x.toFixed(2));
+    document.getElementById('arcThumb').setAttribute('cy', pt.y.toFixed(2));
+    const fill = document.getElementById('arcFill');
+    if      (p <= 0.005) fill.setAttribute('d', '');
+    else if (p >= 0.995) fill.setAttribute('d', 'M 42.83 42.83 A 95 95 0 1 0 177.17 42.83');
+    else                 fill.setAttribute('d', arcPath(ANG_START, angle, R));
+  }
+
+  renderArc(currentSetT);
+
+  /* ═══════ ARC DRAG ═══════ */
+  const arcSvg = document.getElementById('arcSvg');
+
+  arcSvg.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    arcSvg.setPointerCapture(e.pointerId);
+    arcSvg.classList.add('dragging');
+    isDragging = true;
+    handleDragMove(e);
+  });
+
+  arcSvg.addEventListener('pointermove', e => {
+    if (!isDragging) return;
+    e.preventDefault();
+    handleDragMove(e);
+  });
+
+  arcSvg.addEventListener('pointerup',     () => commitDrag());
+  arcSvg.addEventListener('pointercancel', () => commitDrag());
+
+  function handleDragMove(e) {
+    const rect = arcSvg.getBoundingClientRect();
+    const px = (e.clientX - rect.left) * (220 / rect.width);
+    const py = (e.clientY - rect.top)  * (220 / rect.height);
+    const svgAngle = ((Math.atan2(py - CY, px - CX) * 180 / Math.PI) + 360) % 360;
+    const t = angleToTemp(svgAngle);
+    currentSetT = t;
+    renderArc(t);
+
+    document.getElementById('tempNow').innerHTML = `${t.toFixed(1)}<sup>°</sup>`;
+    document.getElementById('tempNow').classList.add('live');
+    document.getElementById('arcEyebrow').textContent = 'Ziel-Temperatur';
+    document.getElementById('arcEyebrow').classList.add('live');
+    document.getElementById('arcSublabel').innerHTML = `<strong>loslassen zum Setzen</strong>`;
+  }
+
+  async function commitDrag() {
+    if (!isDragging) return;
+    isDragging = false;
+    arcSvg.classList.remove('dragging');
+
+    document.getElementById('tempNow').innerHTML =
+      currentIstT !== null ? `${currentIstT.toFixed(1)}<sup>°</sup>` : `–<sup>°</sup>`;
+    document.getElementById('tempNow').classList.remove('live');
+    document.getElementById('arcEyebrow').textContent = 'Ist-Temperatur';
+    document.getElementById('arcEyebrow').classList.remove('live');
+    document.getElementById('arcSublabel').innerHTML = `Ziel: <strong>${currentSetT.toFixed(1)} °C</strong>`;
+
+    try {
+      await fhemSet(`set Whirlpool setTemp ${currentSetT}`);
+      toast(`Ziel: ${currentSetT.toFixed(1)} °C`, 'ok');
+    } catch(e) { toast('Fehler beim Setzen', 'err'); }
+  }
+
+  /* ═══════ CIRCULAR CONTROLS ═══════ */
+  const PUMP_LABELS  = ['Aus', 'An', 'Hoch'];
+  const PUMP_CLASSES = ['s0', 's1', 's2'];
+
+  function renderPump(device, val) {
+    const btn = document.getElementById(`btn-${device}`);
+    const lbl = document.getElementById(`slbl-${device}`);
+    btn.className = `ctrl-btn ${PUMP_CLASSES[val]}`;
+    lbl.textContent = PUMP_LABELS[val];
+    lbl.className   = `ctrl-state-lbl${val > 0 ? ' teal' : ''}`;
+  }
+
+  function renderLight(val) {
+    const btn = document.getElementById('btn-light');
+    const lbl = document.getElementById('slbl-light');
+    btn.className   = `ctrl-btn ${val ? 'lon' : 's0'}`;
+    lbl.textContent = val ? 'Ein' : 'Aus';
+    lbl.className   = `ctrl-state-lbl${val ? ' gold' : ''}`;
+  }
+
+  async function cyclePump(device) {
+    pumpState[device] = (pumpState[device] + 1) % 3;
+    const val = pumpState[device];
+    renderPump(device, val);
+    try {
+      await fhemSet(`set Whirlpool ${device} ${val}`);
+      toast(`${device === 'pump1' ? 'Pumpe 1' : 'Pumpe 2'}: ${PUMP_LABELS[val]}`, 'ok');
+    } catch(e) { toast('Fehler', 'err'); }
+  }
+
+  async function cycleLight() {
+    lightVal = lightVal ? 0 : 1;
+    renderLight(lightVal);
+    try {
+      await fhemSet(`set Whirlpool light ${lightVal}`);
+      toast(`Licht: ${lightVal ? 'Ein' : 'Aus'}`, 'ok');
+    } catch(e) { toast('Fehler', 'err'); }
+  }
+
+  /* ═══════ SETTINGS ═══════ */
+  function toggleSettings() {
+    const panel = document.getElementById('settingsPanel');
+    panel.classList.toggle('open');
+    document.getElementById('settingsBtn').classList.toggle('active', panel.classList.contains('open'));
+  }
+
+  function saveSettings() {
+    fhemUrl = document.getElementById('fhemUrlInput').value.trim() || 'http://fhem.local:8083/fhem';
+    localStorage.setItem('fhemUrl', fhemUrl);
+  }
+
+  /* ═══════ FHEM API ═══════ */
+  function csrfParam() {
+    return csrfToken ? `&fwcsrf=${csrfToken}` : '';
+  }
+
+  async function fetchCsrfToken() {
+    try {
+      const res = await fetch(`${fhemUrl}?XHR=1`, { mode: 'cors' });
+      const t   = res.headers.get('X-FHEM-csrfToken');
+      if (t) csrfToken = t;
+    } catch(_) {}
+  }
+
+  async function fhemSet(cmd) {
+    return fetch(`${fhemUrl}?cmd=${encodeURIComponent(cmd)}&XHR=1${csrfParam()}`, { mode: 'cors' });
+  }
+
+  async function fhemJsonList() {
+    const res  = await fetch(`${fhemUrl}?cmd=jsonlist2+Whirlpool&XHR=1${csrfParam()}`, { mode: 'cors' });
+    const json = await res.json();
+    return json?.Results?.[0]?.Readings ?? null;
+  }
+
+  /* ═══════ POLL ═══════ */
+  async function poll() {
+    const btn = document.getElementById('refreshBtn');
+    btn.classList.add('spinning');
+    try {
+      const r = await fhemJsonList();
+      if (!r) throw new Error('no data');
+      applyReadings(r);
+    } catch(e) {
+      setOffline();
+      toast('Nicht erreichbar — URL prüfen', 'err');
+    } finally {
+      btn.classList.remove('spinning');
+    }
+  }
+
+  function startPoll() {
+    poll();
+    clearInterval(pollHandle);
+    pollHandle = setInterval(poll, 10000);
+  }
+
+  /* ═══════ APPLY READINGS ═══════ */
+  function applyReadings(r) {
+    const v = k => r[k]?.Value ?? null;
+
+    const temp   = parseFloat(v('temp'));
+    const setTmp = parseFloat(v('setTemp'));
+    currentIstT  = isNaN(temp) ? null : temp;
+
+    if (!isDragging) {
+      document.getElementById('tempNow').innerHTML =
+        isNaN(temp) ? '–<sup>°</sup>' : `${temp.toFixed(1)}<sup>°</sup>`;
+
+      if (!isNaN(setTmp)) {
+        currentSetT = setTmp;
+        renderArc(setTmp);
+        document.getElementById('arcSublabel').innerHTML = `Ziel: <strong>${setTmp.toFixed(1)} °C</strong>`;
+      }
+    }
+
+    /* Connection state */
+    const state = v('state') ?? 'unknown';
+    document.getElementById('statusChip').className = 'status-chip ' + (
+      state === 'connected' ? 'connected' : ['disconnected','timeout'].includes(state) ? 'error' : 'idle'
+    );
+    document.getElementById('statusLabel').textContent =
+      ({connected:'Verbunden', disconnected:'Getrennt', timeout:'Timeout', defined:'Initialisiert'})[state] ?? state;
+
+    /* Heating */
+    const heating = parseInt(v('heating') ?? '0') === 1;
+    document.getElementById('heatChip').className    = 'heat-chip ' + (heating ? 'on' : 'off');
+    document.getElementById('heatLabel').textContent = heating ? 'Heizt' : 'Standby';
+    document.getElementById('arcWrapper').classList.toggle('heating', heating);
+    document.getElementById('arcFill').setAttribute('stroke', heating ? '#ff9040' : '#00cfc0');
+    document.getElementById('arcThumb').setAttribute('fill',  heating ? '#ff9040' : '#00cfc0');
+
+    /* Mode */
+    const mode = v('heatingMode');
+    const mc   = document.getElementById('modeChip');
+    if (mode && mode !== 'unknown') { mc.style.display=''; mc.textContent=mode.replace(/_/g,' '); }
+    else mc.style.display = 'none';
+
+    /* Pumps */
+    const p1 = parseInt(v('pump1') ?? '0');
+    const p2 = parseInt(v('pump2') ?? '0');
+    pumpState.pump1 = p1; pumpState.pump2 = p2;
+    renderPump('pump1', p1);
+    renderPump('pump2', p2);
+
+    /* Light */
+    lightVal = parseInt(v('light') ?? '0');
+    renderLight(lightVal);
+
+    /* Fault */
+    const fault = v('faultMessage') ?? '';
+    const isOk  = !fault || fault === 'Spa OK';
+    const fl    = document.getElementById('faultLine');
+    fl.textContent = isOk ? '' : fault;
+    fl.className   = 'fault-line' + (isOk ? '' : ' err');
+
+    document.getElementById('updateLine').textContent =
+      'Zuletzt: ' + new Date().toLocaleTimeString('de-DE');
+  }
+
+  function setOffline() {
+    document.getElementById('statusChip').className = 'status-chip error';
+    document.getElementById('statusLabel').textContent = 'Nicht erreichbar';
+    const fl = document.getElementById('faultLine');
+    fl.textContent = 'FHEM nicht erreichbar — URL in den Einstellungen prüfen';
+    fl.className = 'fault-line err';
+  }
+
+  /* ═══════ TOAST ═══════ */
+  let toastTimer;
+  function toast(msg, type = '') {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className   = 'toast show' + (type ? ' ' + type : '');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 2400);
+  }
+
+  /* ═══════ BOOT ═══════ */
+  fetchCsrfToken().then(startPoll);
+</script>
+
+</body>
+</html>

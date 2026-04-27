@@ -29,6 +29,8 @@ A native FHEM Perl module for direct TCP control of **Balboa WiFi** spa controll
 
 ## Installation
 
+### FHEM Module
+
 Copy `76_Balboa.pm` into your FHEM module directory:
 
 ```bash
@@ -40,6 +42,25 @@ Then reload the module in FHEM:
 ```
 reload 76_Balboa
 ```
+
+### Web App (optional)
+
+A touch-friendly control interface is included in `webapp/index.html`. Deploy it directly onto the FHEM server so it can call the FHEM API without CORS issues:
+
+```bash
+mkdir -p /opt/fhem/www/balboa
+cp webapp/index.html /opt/fhem/www/balboa/index.html
+```
+
+The app is then available at:
+
+```
+http://<fhem-ip>:8083/fhem/www/balboa/index.html
+```
+
+It automatically calls `/fhem` as the API base URL (same host, no extra configuration needed). If your FHEM instance uses a CSRF token (default since FHEM 5.8), the app fetches and includes it automatically.
+
+> **Note:** If your FHEM web interface uses a custom `webname` attribute (default: `fhem`), adjust the URL accordingly. You can also override the API URL via the settings icon inside the app.
 
 ---
 
