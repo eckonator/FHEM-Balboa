@@ -24,7 +24,7 @@ my %BALBOA_TOGGLE = (
     blower => 0x0C,
 );
 
-my @BALBOA_PUMP_STATES = qw(off low high unknown);
+my @BALBOA_PUMP_STATES = (0, 1, 2, "unknown");
 my @BALBOA_HEAT_MODES  = qw(ready rest unknown ready_in_rest);
 
 sub Balboa_Initialize($) {
@@ -187,8 +187,8 @@ sub Balboa_ParseStatusFrame($) {
         setTemp     => $setTemp,
         pump1       => $BALBOA_PUMP_STATES[$b[11] & 0x03]        // "unknown",
         pump2       => $BALBOA_PUMP_STATES[($b[11] >> 2) & 0x03] // "unknown",
-        light       => ($b[14] & 0x03) ? "on" : "off",
-        heating     => ($b[10] & 0x30) ? "on" : "off",
+        light       => ($b[14] & 0x03) ? 1 : 0,
+        heating     => ($b[10] & 0x30) ? 1 : 0,
         heatingMode => $BALBOA_HEAT_MODES[$b[5] & 0x03] // "unknown",
         rawHex      => join(' ', map { sprintf('%02X', $_) } @b),
     };
@@ -433,12 +433,11 @@ sub Balboa_Poll($) {
 ##############################################
 sub Balboa_ToggleCount($$$) {
     my ($item, $current, $desired) = @_;
-    return 0 if $current eq $desired;
+    return 0 if $current == $desired;
     return 1 if $item eq "light";
 
-    my %ord = (off => 0, low => 1, on => 1, high => 2);
-    my $c = $ord{$current} // 0;
-    my $d = $ord{$desired}  // 0;
+    my $c = int($current // 0);
+    my $d = int($desired  // 0);
     return ($d - $c + 3) % 3;
 }
 
@@ -450,8 +449,8 @@ sub Balboa_Set($$$@) {
     my ($hash, $name, $cmd, @args) = @_;
 
     my $list = "setTemp:slider,10,0.5,37 "
-             . "pump1:on,off,high pump2:on,off,high "
-             . "light:on,off "
+             . "pump1:0,1,2 pump2:0,1,2 "
+             . "light:0,1 "
              . "statusRequest:noArg";
 
     return $list if $cmd eq "?";
@@ -487,13 +486,14 @@ sub Balboa_Set($$$@) {
 
     # --- pump1 / pump2 ---
     if ($cmd eq "pump1" || $cmd eq "pump2") {
-        my $desired = lc($args[0] // "");
-        return "Bitte on, off oder high angeben" unless $desired =~ /^(on|off|high)$/;
+        my $desired = $args[0] // "";
+        return "Bitte 0, 1 oder 2 angeben" unless $desired =~ /^(0|1|2)$/;
+        $desired = int($desired);
 
-        my $current = ReadingsVal($name, $cmd, "off");
+        my $current = int(ReadingsVal($name, $cmd, 0));
         my $toggles = Balboa_ToggleCount($cmd, $current, $desired);
 
-        my $newState = ($desired eq "on") ? "low" : $desired;
+        my $newState = $desired;
         my $deadline = time() + 15 * 60;
         if ($toggles > 0) {
             push @{$hash->{helper}{CMD_QUEUE}}, "toggle:$cmd:$toggles:$deadline:$newState";
@@ -510,10 +510,11 @@ sub Balboa_Set($$$@) {
 
     # --- light ---
     if ($cmd eq "light") {
-        my $desired = lc($args[0] // "");
-        return "Bitte on oder off angeben" unless $desired =~ /^(on|off)$/;
+        my $desired = $args[0] // "";
+        return "Bitte 0 oder 1 angeben" unless $desired =~ /^(0|1)$/;
+        $desired = int($desired);
 
-        my $current = ReadingsVal($name, "light", "off");
+        my $current = int(ReadingsVal($name, "light", 0));
         if ($current ne $desired) {
             my $deadline = time() + 15 * 60;
             push @{$hash->{helper}{CMD_QUEUE}}, "toggle:light:1:$deadline:$desired";
@@ -573,9 +574,9 @@ sub Balboa_Get($$$@) {
   <b>Set-Befehle</b><br>
   <ul>
     <li><code>setTemp &lt;10-37&gt;</code> &ndash; Soll-Temperatur in &deg;C</li>
-    <li><code>pump1 on|off|high</code> &ndash; Pumpe 1 (on = niedrige Drehzahl)</li>
-    <li><code>pump2 on|off|high</code> &ndash; Pumpe 2</li>
-    <li><code>light on|off</code> &ndash; Licht</li>
+    <li><code>pump1 0|1|2</code> &ndash; Pumpe 1 (0=aus, 1=an, 2=hoch)</li>
+    <li><code>pump2 0|1|2</code> &ndash; Pumpe 2 (0=aus, 1=an, 2=hoch)</li>
+    <li><code>light 0|1</code> &ndash; Licht (0=aus, 1=an)</li>
     <li><code>statusRequest</code> &ndash; Sofortiger Poll</li>
   </ul><br>
 
@@ -583,9 +584,9 @@ sub Balboa_Get($$$@) {
   <ul>
     <li><code>temp</code> &ndash; Ist-Temperatur (&deg;C)</li>
     <li><code>setTemp</code> &ndash; Soll-Temperatur (&deg;C)</li>
-    <li><code>pump1, pump2</code> &ndash; off / low / high</li>
-    <li><code>light</code> &ndash; on / off</li>
-    <li><code>heating</code> &ndash; on / off</li>
+    <li><code>pump1, pump2</code> &ndash; 0 (aus) / 1 (an) / 2 (hoch)</li>
+    <li><code>light</code> &ndash; 0 (aus) / 1 (an)</li>
+    <li><code>heating</code> &ndash; 0 (aus) / 1 (an)</li>
     <li><code>heatingMode</code> &ndash; ready / rest / ready_in_rest</li>
     <li><code>tempScale</code> &ndash; C / F (vom Spa gemeldete Einheit)</li>
     <li><code>faultCode</code> &ndash; 255 = kein Fehler</li>
