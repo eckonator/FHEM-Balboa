@@ -65,22 +65,22 @@ define Whirlpool Balboa 192.168.178.127
 
 | Command | Values | Description |
 |---------|--------|-------------|
-| `setTemp` | 10–40 | Target temperature in °C |
-| `pump1` | `on`, `off`, `high` | Pump 1 (`on` = low speed) |
-| `pump2` | `on`, `off`, `high` | Pump 2 (`on` = low speed) |
-| `light` | `on`, `off` | Light |
+| `setTemp` | 10–37 | Target temperature in °C |
+| `pump1` | `0`, `1`, `2` | Pump 1 (0 = off, 1 = on, 2 = high) |
+| `pump2` | `0`, `1`, `2` | Pump 2 (0 = off, 1 = on, 2 = high) |
+| `light` | `0`, `1` | Light (0 = off, 1 = on) |
 | `statusRequest` | — | Trigger an immediate poll |
 
 **Examples:**
 ```
 set Whirlpool setTemp 38
-set Whirlpool pump1 on
-set Whirlpool pump2 off
-set Whirlpool light on
+set Whirlpool pump1 1
+set Whirlpool pump2 0
+set Whirlpool light 1
 set Whirlpool statusRequest
 ```
 
-> **Note on pumps:** Balboa pumps are toggled, not set directly. The module calculates how many toggle commands are needed to reach the desired state (off → low → high → off). A 2-speed pump cycles through: `off` → `low` → `high` → `off`.
+> **Note on pumps:** Balboa pumps are toggled, not set directly. The module calculates how many toggle commands are needed to reach the desired state. A 2-speed pump cycles through: `0` (off) → `1` (on) → `2` (high) → `0` (off).
 
 ---
 
@@ -88,12 +88,12 @@ set Whirlpool statusRequest
 
 | Reading | Values | Description |
 |---------|--------|-------------|
-| `temp` | 10.0–40.0 | Current water temperature (°C) |
-| `setTemp` | 10.0–40.0 | Target temperature (°C) |
-| `pump1` | `off` / `low` / `high` | Pump 1 state |
-| `pump2` | `off` / `low` / `high` | Pump 2 state |
-| `light` | `on` / `off` | Light state |
-| `heating` | `on` / `off` | Heating element active |
+| `temp` | 10.0–37.0 | Current water temperature (°C) |
+| `setTemp` | 10.0–37.0 | Target temperature (°C) |
+| `pump1` | `0` / `1` / `2` | Pump 1 state (0=off, 1=on, 2=high) |
+| `pump2` | `0` / `1` / `2` | Pump 2 state (0=off, 1=on, 2=high) |
+| `light` | `0` / `1` | Light state (0=off, 1=on) |
+| `heating` | `0` / `1` | Heating element active (0=off, 1=on) |
 | `heatingMode` | `ready` / `rest` / `ready_in_rest` | Heating mode |
 | `tempScale` | `C` / `F` | Temperature unit reported by spa |
 | `faultCode` | `255` = no fault | Fault code (255 = OK) |
