@@ -318,6 +318,117 @@
     .toast.ok   { border-color:rgba(0,207,192,.4); color:var(--teal); }
     .toast.err  { border-color:rgba(255,68,102,.4); color:var(--danger); }
 
+    /* ── FILTER CHIPS ── */
+    .filter-chip {
+      display:inline-flex; align-items:center; gap:6px; padding:5px 11px;
+      border-radius:100px; font-size:10px; font-weight:600; letter-spacing:.1em;
+      text-transform:uppercase;
+      background:rgba(0,207,192,.08); border:1px solid rgba(0,207,192,.22); color:var(--teal);
+      transition:all .4s;
+    }
+    .filter-chip::before {
+      content:''; width:5px; height:5px; border-radius:50%;
+      background:var(--teal); box-shadow:0 0 5px var(--teal);
+      animation:dotPulse 2s ease-in-out infinite;
+    }
+
+    /* ── SPA SETTINGS TOGGLE ROW ── */
+    .spa-toggle-row {
+      display:flex; align-items:center; justify-content:center;
+      gap:8px; margin:4px 0 0; cursor:pointer;
+      color:var(--text-2); font-size:10.5px; font-weight:500;
+      letter-spacing:.18em; text-transform:uppercase;
+      padding:10px; border-radius:12px; transition:color .2s;
+      user-select:none;
+    }
+    .spa-toggle-row:hover { color:var(--teal); }
+    .spa-toggle-arrow { font-size:13px; transition:transform .3s; }
+    .spa-toggle-row.open .spa-toggle-arrow { transform:rotate(180deg); }
+
+    /* ── SPA SETTINGS PANEL ── */
+    .spa-panel { overflow:hidden; max-height:0; transition:max-height .5s ease,margin .4s ease; margin-bottom:0; }
+    .spa-panel.open { max-height:680px; margin-bottom:8px; }
+    .spa-inner {
+      background:var(--bg-card); border:1px solid var(--border);
+      border-radius:18px; padding:20px; backdrop-filter:blur(24px);
+      display:flex; flex-direction:column; gap:16px;
+    }
+
+    /* ── SEGMENTED CONTROL ── */
+    .seg-row { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .seg-label {
+      font-size:9.5px; font-weight:600; letter-spacing:.22em;
+      text-transform:uppercase; color:var(--text-2); flex-shrink:0; min-width:80px;
+    }
+    .seg-ctrl {
+      display:flex; background:rgba(0,0,0,.35);
+      border:1px solid rgba(255,255,255,.08); border-radius:10px;
+      padding:3px; gap:3px; flex:1;
+    }
+    .seg-btn {
+      flex:1; padding:7px 4px; border:none; border-radius:7px;
+      background:transparent; color:var(--text-2);
+      font-family:'DM Sans',sans-serif; font-size:11.5px; font-weight:500;
+      letter-spacing:.08em; cursor:pointer; transition:all .22s;
+    }
+    .seg-btn:hover { color:var(--text-1); }
+    .seg-btn.active {
+      background:rgba(0,207,192,.18); color:var(--teal);
+      box-shadow:0 0 14px rgba(0,207,192,.12);
+    }
+
+    /* ── TIME ROW ── */
+    .time-row { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .time-display {
+      display:flex; flex-direction:column; gap:2px;
+    }
+    .time-display .seg-label { margin-bottom:0; }
+    .time-value { font-size:20px; font-weight:300; color:var(--teal); letter-spacing:.06em; font-family:'Cormorant Garamond',serif; }
+    .btn-sync {
+      padding:8px 16px; border-radius:10px;
+      background:rgba(0,207,192,.08); border:1px solid rgba(0,207,192,.2);
+      color:var(--teal); font-family:'DM Sans',sans-serif;
+      font-size:10.5px; font-weight:600; letter-spacing:.12em; text-transform:uppercase;
+      cursor:pointer; transition:all .22s; white-space:nowrap;
+    }
+    .btn-sync:hover { background:rgba(0,207,192,.16); border-color:rgba(0,207,192,.45); }
+    .btn-sync:active { transform:scale(.97); }
+
+    /* ── FILTER SECTION ── */
+    .filter-section { display:flex; flex-direction:column; gap:10px; }
+    .filter-section-title {
+      font-size:9px; font-weight:600; letter-spacing:.28em; text-transform:uppercase;
+      color:var(--teal); opacity:.7;
+    }
+    .filter-cycle { display:flex; flex-direction:column; gap:8px; }
+    .filter-cycle-head { display:flex; align-items:center; justify-content:space-between; }
+    .filter-cycle-label {
+      font-size:10px; font-weight:600; letter-spacing:.18em; text-transform:uppercase; color:var(--text-2);
+    }
+    .filter-fields { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+    .filter-field { display:flex; flex-direction:column; gap:3px; }
+    .filter-field-label {
+      font-size:8.5px; font-weight:600; letter-spacing:.18em; text-transform:uppercase; color:var(--text-3);
+    }
+    .filter-input {
+      background:rgba(0,0,0,.35); border:1px solid rgba(255,255,255,.08);
+      border-radius:8px; padding:8px 10px; color:var(--text-1);
+      font-family:'DM Sans',sans-serif; font-size:13px; outline:none;
+      transition:border-color .2s; width:100%;
+      color-scheme: dark;
+    }
+    .filter-input:focus { border-color:rgba(0,207,192,.5); }
+    .filter-divider { height:1px; background:rgba(0,207,192,.08); }
+    .btn-filter-save {
+      width:100%; padding:10px; border-radius:10px;
+      background:rgba(0,207,192,.1); border:1px solid rgba(0,207,192,.25);
+      color:var(--teal); font-family:'DM Sans',sans-serif;
+      font-size:11px; font-weight:600; letter-spacing:.14em; text-transform:uppercase;
+      cursor:pointer; transition:all .22s; margin-top:2px;
+    }
+    .btn-filter-save:hover { background:rgba(0,207,192,.18); }
+    .btn-filter-save:active { transform:scale(.98); }
+
     @media(max-width:380px) {
       .app { padding:20px 12px 48px; }
       .temp-now { font-size:70px; }
@@ -385,6 +496,8 @@
       <span id="heatLabel">Standby</span>
     </div>
     <div class="mode-chip" id="modeChip" style="display:none"></div>
+    <div class="filter-chip" id="fil1Chip" style="display:none">Fil 1</div>
+    <div class="filter-chip" id="fil2Chip" style="display:none">Fil 2</div>
   </div>
 
   <!-- Circular temperature arc -->
@@ -513,6 +626,102 @@
       <div class="ctrl-state-lbl" id="slbl-light">Aus</div>
     </div>
 
+  </div>
+
+  <!-- Spa Settings Toggle -->
+  <div class="spa-toggle-row" id="spaToggleRow" onclick="toggleSpaSettings()">
+    <span>Spa-Einstellungen</span>
+    <span class="spa-toggle-arrow" id="spaArrow">▾</span>
+  </div>
+
+  <!-- Spa Settings Panel -->
+  <div class="spa-panel" id="spaPanel">
+    <div class="spa-inner">
+
+      <!-- Temperatur-Einheit -->
+      <div class="seg-row">
+        <span class="seg-label">Temp-Einheit</span>
+        <div class="seg-ctrl">
+          <button class="seg-btn active" id="scale-C" onclick="setSetting('tempScale','C')">°C</button>
+          <button class="seg-btn"        id="scale-F" onclick="setSetting('tempScale','F')">°F</button>
+        </div>
+      </div>
+
+      <!-- Heat Mode -->
+      <div class="seg-row">
+        <span class="seg-label">Heat Mode</span>
+        <div class="seg-ctrl">
+          <button class="seg-btn active" id="heat-ready" onclick="setSetting('heatMode','ready')">Ready</button>
+          <button class="seg-btn"        id="heat-rest"  onclick="setSetting('heatMode','rest')">Rest</button>
+        </div>
+      </div>
+
+      <!-- Temperatur-Bereich -->
+      <div class="seg-row">
+        <span class="seg-label">Temp-Bereich</span>
+        <div class="seg-ctrl">
+          <button class="seg-btn active" id="range-low"  onclick="setSetting('tempRange','low')">Low</button>
+          <button class="seg-btn"        id="range-high" onclick="setSetting('tempRange','high')">High</button>
+        </div>
+      </div>
+
+      <!-- Spa-Uhrzeit -->
+      <div class="time-row">
+        <div class="time-display">
+          <span class="seg-label">Spa-Zeit</span>
+          <span class="time-value" id="spaTimeDisplay">–:––</span>
+        </div>
+        <button class="btn-sync" onclick="syncTime()">↻ Jetzt sync</button>
+      </div>
+
+      <div class="filter-divider"></div>
+
+      <!-- Filter-Zyklen -->
+      <div class="filter-section">
+        <span class="filter-section-title">Filterzyklen</span>
+
+        <!-- Zyklus 1 -->
+        <div class="filter-cycle">
+          <div class="filter-cycle-head">
+            <span class="filter-cycle-label">Zyklus 1</span>
+          </div>
+          <div class="filter-fields">
+            <div class="filter-field">
+              <span class="filter-field-label">Start</span>
+              <input class="filter-input" type="time" id="f1start" value="00:00">
+            </div>
+            <div class="filter-field">
+              <span class="filter-field-label">Dauer (HH:MM)</span>
+              <input class="filter-input" type="time" id="f1dur" value="00:30">
+            </div>
+          </div>
+        </div>
+
+        <!-- Zyklus 2 -->
+        <div class="filter-cycle">
+          <div class="filter-cycle-head">
+            <span class="filter-cycle-label">Zyklus 2</span>
+            <div class="seg-ctrl" style="flex:0;min-width:100px">
+              <button class="seg-btn" id="f2en-0" onclick="setF2Enable(0)">Aus</button>
+              <button class="seg-btn active" id="f2en-1" onclick="setF2Enable(1)">An</button>
+            </div>
+          </div>
+          <div class="filter-fields" id="f2fields">
+            <div class="filter-field">
+              <span class="filter-field-label">Start</span>
+              <input class="filter-input" type="time" id="f2start" value="00:00">
+            </div>
+            <div class="filter-field">
+              <span class="filter-field-label">Dauer (HH:MM)</span>
+              <input class="filter-input" type="time" id="f2dur" value="00:30">
+            </div>
+          </div>
+        </div>
+
+        <button class="btn-filter-save" onclick="saveFilterCycles()">Filterzeiten speichern</button>
+      </div>
+
+    </div>
   </div>
 
   <!-- Refresh -->
@@ -689,6 +898,63 @@
     document.getElementById('settingsBtn').classList.toggle('active', panel.classList.contains('open'));
   }
 
+  function toggleSpaSettings() {
+    const panel  = document.getElementById('spaPanel');
+    const toggle = document.getElementById('spaToggleRow');
+    panel.classList.toggle('open');
+    toggle.classList.toggle('open', panel.classList.contains('open'));
+  }
+
+  /* ═══════ SPA SETTINGS ═══════ */
+  function activateSeg(prefix, value) {
+    document.querySelectorAll(`[id^="${prefix}-"]`).forEach(btn => {
+      btn.classList.toggle('active', btn.id === `${prefix}-${value}`);
+    });
+  }
+
+  async function setSetting(key, value) {
+    const prefixMap = { tempScale: 'scale', heatMode: 'heat', tempRange: 'range' };
+    activateSeg(prefixMap[key], value);
+    try {
+      await fhemSet(`set Whirlpool ${key} ${value}`);
+      toast(`${key}: ${value}`, 'ok');
+    } catch(e) { toast('Fehler', 'err'); }
+  }
+
+  async function syncTime() {
+    const now = new Date();
+    const hh  = String(now.getHours()).padStart(2, '0');
+    const mm  = String(now.getMinutes()).padStart(2, '0');
+    const ts  = `${hh}:${mm}`;
+    try {
+      await fhemSet(`set Whirlpool setTime ${ts}`);
+      document.getElementById('spaTimeDisplay').textContent = ts;
+      toast(`Spa-Zeit gesetzt: ${ts}`, 'ok');
+    } catch(e) { toast('Fehler', 'err'); }
+  }
+
+  /* ═══════ FILTER CYCLES ═══════ */
+  let f2Enabled = 1;
+
+  function setF2Enable(val) {
+    f2Enabled = val;
+    document.getElementById('f2en-0').classList.toggle('active', val === 0);
+    document.getElementById('f2en-1').classList.toggle('active', val === 1);
+    document.getElementById('f2fields').style.opacity = val ? '1' : '0.35';
+  }
+
+  async function saveFilterCycles() {
+    const f1s = document.getElementById('f1start').value || '00:00';
+    const f1d = document.getElementById('f1dur').value   || '00:30';
+    const f2s = document.getElementById('f2start').value || '00:00';
+    const f2d = document.getElementById('f2dur').value   || '00:30';
+    try {
+      await fhemSet(`set Whirlpool filterCycle1 ${f1s} ${f1d}`);
+      await fhemSet(`set Whirlpool filterCycle2 ${f2Enabled} ${f2s} ${f2d}`);
+      toast('Filterzeiten gespeichert', 'ok');
+    } catch(e) { toast('Fehler', 'err'); }
+  }
+
   function saveSettings() {
     fhemUrl = document.getElementById('fhemUrlInput').value.trim() || 'http://fhem.local:8083/fhem';
     localStorage.setItem('fhemUrl', fhemUrl);
@@ -797,6 +1063,36 @@
     const fl    = document.getElementById('faultLine');
     fl.textContent = isOk ? '' : fault;
     fl.className   = 'fault-line' + (isOk ? '' : ' err');
+
+    /* Temp scale */
+    const scale = v('tempScale');
+    if (scale === 'C' || scale === 'F') activateSeg('scale', scale);
+
+    /* Heat mode (nur ready / rest abbilden) */
+    const hmode = v('heatingMode');
+    if (hmode === 'ready' || hmode === 'rest') activateSeg('heat', hmode);
+
+    /* Temp range */
+    const range = v('tempRange');
+    if (range === 'low' || range === 'high') activateSeg('range', range);
+
+    /* Spa time */
+    const tod = v('timeOfDay');
+    if (tod) document.getElementById('spaTimeDisplay').textContent = tod;
+
+    /* Filter chips (running status) */
+    const f1run = parseInt(v('filter1Running') ?? '0') === 1;
+    const f2run = parseInt(v('filter2Running') ?? '0') === 1;
+    document.getElementById('fil1Chip').style.display = f1run ? '' : 'none';
+    document.getElementById('fil2Chip').style.display = f2run ? '' : 'none';
+
+    /* Filter cycle settings → prefill inputs */
+    const f1s = v('filter1Start');    if (f1s && f1s !== 'unknown') document.getElementById('f1start').value = f1s;
+    const f1d = v('filter1Duration'); if (f1d && f1d !== 'unknown') document.getElementById('f1dur').value   = f1d;
+    const f2s = v('filter2Start');    if (f2s && f2s !== 'unknown') document.getElementById('f2start').value = f2s;
+    const f2d = v('filter2Duration'); if (f2d && f2d !== 'unknown') document.getElementById('f2dur').value   = f2d;
+    const f2e = parseInt(v('filter2Enabled') ?? '1');
+    setF2Enable(f2e);
 
     document.getElementById('updateLine').textContent =
       'Zuletzt: ' + new Date().toLocaleTimeString('de-DE');

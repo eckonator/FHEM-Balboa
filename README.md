@@ -90,6 +90,12 @@ define Whirlpool Balboa 192.168.178.127
 | `pump1` | `0`, `1`, `2` | Pump 1 (0 = off, 1 = on, 2 = high) |
 | `pump2` | `0`, `1`, `2` | Pump 2 (0 = off, 1 = on, 2 = high) |
 | `light` | `0`, `1` | Light (0 = off, 1 = on) |
+| `heatMode` | `ready`, `rest` | Heating mode |
+| `tempRange` | `low`, `high` | Temperature range |
+| `tempScale` | `C`, `F` | Temperature unit |
+| `setTime` | `HH:MM` | Set spa clock |
+| `filterCycle1` | `HH:MM HH:MM` | Filter cycle 1: start time and duration |
+| `filterCycle2` | `0\|1 HH:MM HH:MM` | Filter cycle 2: enable, start time, duration |
 | `statusRequest` | — | Trigger an immediate poll |
 
 **Examples:**
@@ -98,6 +104,10 @@ set Whirlpool setTemp 38
 set Whirlpool pump1 1
 set Whirlpool pump2 0
 set Whirlpool light 1
+set Whirlpool heatMode ready
+set Whirlpool tempRange high
+set Whirlpool tempScale C
+set Whirlpool setTime 14:30
 set Whirlpool statusRequest
 ```
 
@@ -117,6 +127,15 @@ set Whirlpool statusRequest
 | `heating` | `0` / `1` | Heating element active (0=off, 1=on) |
 | `heatingMode` | `ready` / `rest` / `ready_in_rest` | Heating mode |
 | `tempScale` | `C` / `F` | Temperature unit reported by spa |
+| `timeOfDay` | `HH:MM` | Current time stored in spa |
+| `tempRange` | `low` / `high` | Active temperature range |
+| `filter1Running` | `0` / `1` | Filter cycle 1 currently running |
+| `filter2Running` | `0` / `1` | Filter cycle 2 currently running |
+| `filter1Start` | `HH:MM` | Filter cycle 1 start time |
+| `filter1Duration` | `HH:MM` | Filter cycle 1 duration |
+| `filter2Enabled` | `0` / `1` | Filter cycle 2 enabled |
+| `filter2Start` | `HH:MM` | Filter cycle 2 start time |
+| `filter2Duration` | `HH:MM` | Filter cycle 2 duration |
 | `faultCode` | `255` = no fault | Fault code (255 = OK) |
 | `faultMessage` | Text | Fault description |
 | `rawStatus` | Hex bytes | Raw status payload for debugging |
