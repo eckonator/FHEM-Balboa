@@ -47,6 +47,8 @@ reload 76_Balboa
 
 A touch-friendly control interface is included in `webapp/index.html`. Deploy it directly onto the FHEM server so it can call the FHEM API without CORS issues:
 
+<img src="screenshot/webapp.png" alt="Webapp Screenshot" width="320">
+
 ```bash
 mkdir -p /opt/fhem/www/balboa
 cp webapp/index.html /opt/fhem/www/balboa/index.html

@@ -211,22 +211,59 @@ sub Balboa_ParseStatusFrame($) {
 ##############################################
 sub Balboa_Poll_BG($) {
     my ($args) = @_;
-    my ($name, $ip, $port, $isCelsius_hint, @cmds) = split(/\|/, $args);
+    my ($name, $ip, $port, $isCelsius_hint, $fetch_filter, @cmds) = split(/\|/, $args);
 
-    my $sock = IO::Socket::INET->new(
-        PeerAddr => $ip,
-        PeerPort => $port,
-        Proto    => 'tcp',
-        Timeout  => 5,
-    );
+    my $sock;
+    for (1..3) {
+        $sock = IO::Socket::INET->new(
+            PeerAddr => $ip,
+            PeerPort => $port,
+            Proto    => 'tcp',
+            Timeout  => 5,
+        );
+        last if $sock;
+        select(undef, undef, undef, 2) if $_ < 3;
+    }
     return "$name|ERR|connect failed: $!" unless $sock;
 
-    # Status lesen (Spa sendet automatisch alle ~1s)
+    my ($f1_start, $f1_dur, $f2_en, $f2_start, $f2_dur) = ("unknown","unknown",0,"unknown","unknown");
+
+    # Beim ersten Poll nach FHEM-Start: Filter-Request senden
+    if ($fetch_filter) {
+        my $freq = Balboa_BuildMsg(pack('CCC', 0x0A, 0xBF, 0x22), pack('CCC', 0x01, 0x00, 0x00));
+        syswrite($sock, $freq);
+        Log3($name, 4, "Balboa $name: filter request gesendet: " . unpack('H*', $freq));
+    }
+
+    # Status lesen; Filter-Response als Bonus einfangen falls sie vor Status-Frame kommt
     my $status;
     for (1..8) {
         my $frame = Balboa_ReadFrame($sock, 2);
-        next unless $frame;  # Timeout oder falsches Frame -> weiter versuchen
-        $status = Balboa_ParseStatusFrame($frame);
+        next unless $frame;
+        next if length($frame) < 9;
+        my $ftype = substr($frame, 2, 3);
+
+        if (!$status) {
+            $status = Balboa_ParseStatusFrame($frame);
+        }
+
+        if ($fetch_filter && $f1_start eq "unknown"
+                && ($ftype eq "\x0A\xBF\x23" || $ftype eq "\xFF\xAF\x23")) {
+            my $pl = substr($frame, 5, length($frame) - 7);
+            my @b  = unpack('C*', $pl);
+            Log3($name, 4, "Balboa $name: filter response " . scalar(@b) . " Bytes: "
+                . join(' ', map { sprintf('%02X', $_) } @b));
+            my $o = (scalar(@b) >= 9 && $b[0] == 0x01) ? 1 : 0;
+            if (scalar(@b) >= $o + 8) {
+                $f1_start = sprintf("%02d:%02d", $b[$o],   $b[$o+1]);
+                $f1_dur   = sprintf("%02d:%02d", $b[$o+2], $b[$o+3]);
+                $f2_en    = ($b[$o+4] & 0x80) ? 1 : 0;
+                $f2_start = sprintf("%02d:%02d", ($b[$o+4] & 0x7F), $b[$o+5]);
+                $f2_dur   = sprintf("%02d:%02d", $b[$o+6], $b[$o+7]);
+                Log3($name, 3, "Balboa $name: Filterzyklen: F1=$f1_start/$f1_dur F2en=$f2_en $f2_start/$f2_dur");
+            }
+        }
+
         last if $status;
     }
 
@@ -234,6 +271,7 @@ sub Balboa_Poll_BG($) {
         $sock->close();
         return "$name|ERR|no status frame received";
     }
+    Log3($name, 3, "Balboa $name: Filterzyklus-Response nicht empfangen") if $f1_start eq "unknown";
 
     # Gequeuete Befehle senden
     my @valid_cmds = grep { /^(setTemp|toggle|setScale|setTime|setFilter):/ } @cmds;
@@ -295,29 +333,6 @@ sub Balboa_Poll_BG($) {
             next unless $frame;
             my $new = Balboa_ParseStatusFrame($frame);
             if ($new) { $status = $new; last; }
-        }
-    }
-
-    # Filter-Cycle-Daten anfordern (0A BF 22, SettingsCode=0x01)
-    my ($f1_start, $f1_dur, $f2_en, $f2_start, $f2_dur) = ("unknown","unknown",0,"unknown","unknown");
-    my $freq = Balboa_BuildMsg(pack('CCC', 0x0A, 0xBF, 0x22), pack('CCC', 0x01, 0x00, 0x00));
-    syswrite($sock, $freq);
-    for (1..8) {
-        my $frame = Balboa_ReadFrame($sock, 2);
-        next unless $frame;
-        next if length($frame) < 9;
-        my $ftype = substr($frame, 2, 3);
-        if ($ftype eq "\xFF\xAF\x23") {
-            my $pl = substr($frame, 5, length($frame) - 7);
-            if (length($pl) >= 8) {
-                my @b = unpack('C*', $pl);
-                $f1_start = sprintf("%02d:%02d", $b[0], $b[1]);
-                $f1_dur   = sprintf("%02d:%02d", $b[2], $b[3]);
-                $f2_en    = ($b[4] & 0x80) ? 1 : 0;
-                $f2_start = sprintf("%02d:%02d", ($b[4] & 0x7F), $b[5]);
-                $f2_dur   = sprintf("%02d:%02d", $b[6], $b[7]);
-                last;
-            }
         }
     }
 
@@ -472,11 +487,15 @@ sub Balboa_Poll_Done($) {
     readingsBulkUpdate($hash, "tempRange",      $tempRange);
     readingsBulkUpdate($hash, "filter1Running",  $filter1Running);
     readingsBulkUpdate($hash, "filter2Running",  $filter2Running);
-    readingsBulkUpdate($hash, "filter1Start",    $filter1Start)    if $filter1Start    ne "unknown";
-    readingsBulkUpdate($hash, "filter1Duration", $filter1Duration) if $filter1Duration ne "unknown";
+    if ($filter1Start ne "unknown") {
+        $hash->{helper}{FILTER_FETCHED_AT} = time();
+        readingsBulkUpdate($hash, "filter1Start",    $filter1Start);
+        readingsBulkUpdate($hash, "filter1Duration", $filter1Duration);
+    }
     readingsBulkUpdate($hash, "filter2Enabled",  $filter2Enabled);
     readingsBulkUpdate($hash, "filter2Start",    $filter2Start)    if $filter2Start    ne "unknown";
     readingsBulkUpdate($hash, "filter2Duration", $filter2Duration) if $filter2Duration ne "unknown";
+
     readingsBulkUpdate($hash, "faultCode",       "255");
     readingsBulkUpdate($hash, "faultMessage",   "Spa OK");
     readingsBulkUpdate($hash, "rawStatus",      join(' ', @rawParts));
@@ -513,12 +532,14 @@ sub Balboa_Poll($) {
     if ($hash->{helper}{RUNNING_PID}) {
         Log3($name, 4, "Balboa $name: poll laeuft noch, ueberspringe");
     } else {
-        my $isCelsius = (ReadingsVal($name, "tempScale", "C") eq "C") ? 1 : 0;
+        my $isCelsius    = (ReadingsVal($name, "tempScale", "C") eq "C") ? 1 : 0;
+        my $lastFilter   = $hash->{helper}{FILTER_FETCHED_AT} // 0;
+        my $fetchFilter  = (time() - $lastFilter) > 86400 ? 1 : 0;
 
         # CMD_QUEUE in Pipe-getrennten String serialisieren
         my @cmds = @{$hash->{helper}{CMD_QUEUE} // []};
         $hash->{helper}{LAST_SENT_CMDS} = [@cmds];  # Snapshot fuer Verifikation in Poll_Done
-        my $args = join('|', $name, $hash->{IP}, $hash->{PORT}, $isCelsius, @cmds);
+        my $args = join('|', $name, $hash->{IP}, $hash->{PORT}, $isCelsius, $fetchFilter, @cmds);
 
         Log3($name, 4, "Balboa $name: starte Poll" . (@cmds ? " mit " . scalar(@cmds) . " Befehl(en)" : ""));
 
@@ -526,7 +547,7 @@ sub Balboa_Poll($) {
             "Balboa_Poll_BG",
             $args,
             "Balboa_Poll_Done",
-            25,
+            40,
             "Balboa_Poll_Aborted",
             $hash,
         );
