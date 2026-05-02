@@ -92,7 +92,7 @@
 
     /* ── SETTINGS ── */
     .settings-panel { overflow:hidden; max-height:0; transition:max-height .35s ease,margin .35s ease; margin-bottom:0; }
-    .settings-panel.open { max-height:90px; margin-bottom:20px; }
+    .settings-panel.open { max-height:180px; margin-bottom:20px; }
     .settings-inner { background:var(--bg-card); border:1px solid var(--border); border-radius:18px; padding:18px 20px; backdrop-filter:blur(24px); }
     .field-label { font-size:9px; font-weight:600; letter-spacing:.28em; text-transform:uppercase; color:var(--teal); margin-bottom:9px; display:block; }
     .field-input {
@@ -475,9 +475,16 @@
   <!-- Settings -->
   <div class="settings-panel" id="settingsPanel">
     <div class="settings-inner">
-      <label class="field-label" for="fhemUrlInput">FHEM API URL</label>
-      <input class="field-input" type="url" id="fhemUrlInput"
-             placeholder="/fhem" oninput="saveSettings()">
+      <div>
+        <label class="field-label" for="fhemUrlInput">FHEM URL</label>
+        <input class="field-input" type="url" id="fhemUrlInput"
+               placeholder="/fhem" oninput="saveSettings()">
+      </div>
+      <div>
+        <label class="field-label" for="deviceInput">FHEM Device-Name</label>
+        <input class="field-input" type="text" id="deviceInput"
+               placeholder="Whirlpool" oninput="saveSettings()">
+      </div>
     </div>
   </div>
 
@@ -758,7 +765,8 @@
 
 <script>
   /* ═══════ STATE ═══════ */
-  let fhemUrl    = localStorage.getItem('fhemUrl') || '/fhem';
+  let fhemUrl    = localStorage.getItem('fhemUrl_balboa')    || '/fhem';
+  let deviceName = localStorage.getItem('deviceName_balboa') || 'Whirlpool';
   let csrfToken  = '';
   let pumpState  = { pump1: 0, pump2: 0 };
   let lightVal   = 0;
@@ -768,6 +776,7 @@
   let currentIstT = null;
 
   document.getElementById('fhemUrlInput').value = fhemUrl;
+  document.getElementById('deviceInput').value  = deviceName;
 
   /* ═══════ ARC GEOMETRY ═══════
      270° CCW arc: SVG 225° (upper-left) → 315° (upper-right)
@@ -861,7 +870,7 @@
     document.getElementById('arcSublabel').innerHTML = `Ziel: <strong>${currentSetT.toFixed(1)} °C</strong>`;
 
     try {
-      await fhemSet(`set Whirlpool setTemp ${currentSetT}`);
+      await fhemSet(`set ${deviceName} setTemp ${currentSetT}`);
       toast(`Ziel: ${currentSetT.toFixed(1)} °C`, 'ok');
     } catch(e) { toast('Fehler beim Setzen', 'err'); }
   }
@@ -891,7 +900,7 @@
     const val = pumpState[device];
     renderPump(device, val);
     try {
-      await fhemSet(`set Whirlpool ${device} ${val}`);
+      await fhemSet(`set ${deviceName} ${device} ${val}`);
       toast(`${device === 'pump1' ? 'Pumpe 1' : 'Pumpe 2'}: ${PUMP_LABELS[val]}`, 'ok');
     } catch(e) { toast('Fehler', 'err'); }
   }
@@ -900,7 +909,7 @@
     lightVal = lightVal ? 0 : 1;
     renderLight(lightVal);
     try {
-      await fhemSet(`set Whirlpool light ${lightVal}`);
+      await fhemSet(`set ${deviceName} light ${lightVal}`);
       toast(`Licht: ${lightVal ? 'Ein' : 'Aus'}`, 'ok');
     } catch(e) { toast('Fehler', 'err'); }
   }
@@ -930,7 +939,7 @@
     const prefixMap = { tempScale: 'scale', heatMode: 'heat', tempRange: 'range' };
     activateSeg(prefixMap[key], value);
     try {
-      await fhemSet(`set Whirlpool ${key} ${value}`);
+      await fhemSet(`set ${deviceName} ${key} ${value}`);
       toast(`${key}: ${value}`, 'ok');
     } catch(e) { toast('Fehler', 'err'); }
   }
@@ -941,7 +950,7 @@
     const mm  = String(now.getMinutes()).padStart(2, '0');
     const ts  = `${hh}:${mm}`;
     try {
-      await fhemSet(`set Whirlpool setTime ${ts}`);
+      await fhemSet(`set ${deviceName} setTime ${ts}`);
       document.getElementById('spaTimeDisplay').textContent = ts;
       toast(`Spa-Zeit gesetzt: ${ts}`, 'ok');
     } catch(e) { toast('Fehler', 'err'); }
@@ -978,15 +987,17 @@
     const f2s = document.getElementById('f2start').value || '00:00';
     const f2d = document.getElementById('f2dur').value   || '00:30';
     try {
-      await fhemSet(`set Whirlpool filterCycle1 ${f1s} ${f1d}`);
-      await fhemSet(`set Whirlpool filterCycle2 ${f2Enabled} ${f2s} ${f2d}`);
+      await fhemSet(`set ${deviceName} filterCycle1 ${f1s} ${f1d}`);
+      await fhemSet(`set ${deviceName} filterCycle2 ${f2Enabled} ${f2s} ${f2d}`);
       toast('Filterzeiten gespeichert', 'ok');
     } catch(e) { toast('Fehler', 'err'); }
   }
 
   function saveSettings() {
-    fhemUrl = document.getElementById('fhemUrlInput').value.trim() || 'http://fhem.local:8083/fhem';
-    localStorage.setItem('fhemUrl', fhemUrl);
+    fhemUrl    = document.getElementById('fhemUrlInput').value.trim() || '/fhem';
+    deviceName = document.getElementById('deviceInput').value.trim()  || 'Whirlpool';
+    localStorage.setItem('fhemUrl_balboa',    fhemUrl);
+    localStorage.setItem('deviceName_balboa', deviceName);
   }
 
   /* ═══════ FHEM API ═══════ */
@@ -1007,7 +1018,7 @@
   }
 
   async function fhemJsonList() {
-    const res  = await fetch(`${fhemUrl}?cmd=jsonlist2+Whirlpool&XHR=1${csrfParam()}`, { mode: 'cors' });
+    const res  = await fetch(`${fhemUrl}?cmd=jsonlist2+${encodeURIComponent(deviceName)}&XHR=1${csrfParam()}`, { mode: 'cors' });
     const json = await res.json();
     return json?.Results?.[0]?.Readings ?? null;
   }
