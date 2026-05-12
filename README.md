@@ -211,40 +211,6 @@ Protocol reference: [ccutrer/balboa_worldwide_app](https://github.com/ccutrer/ba
 
 ---
 
-## Migrating from HTTPMOD + PHP Proxy
-
-If you previously used an HTTPMOD device with a PHP proxy:
-
-**Old:**
-```
-define Whirlpool HTTPMOD http://192.168.x.x:85/index.php 240
-```
-
-**New:**
-```
-define Whirlpool Balboa 192.168.178.127
-attr Whirlpool interval 180
-```
-
-Reading names are identical (`temp`, `setTemp`, `pump1`, `pump2`, `light`, `heating`, `faultCode`, `faultMessage`). Note that `pump1`, `pump2`, `light` and `heating` now use numeric values (`0`/`1`/`2`) instead of strings (`off`/`on`/`high`). Existing `stateFormat`, `DbLog`, plots and DOIFs that compare against these strings must be updated accordingly.
-
-**Adjust notify definitions** — replace HTTP calls with direct FHEM commands:
-
-```perl
-# Old:
-notify Whirlpool_Heizung:on {
-    HttpUtils_NonblockingGet({ url => "http://192.168.x.x:86/index.php?setTemp=35" })
-}
-
-# New:
-notify Whirlpool_Heizung:on set Whirlpool setTemp 35
-notify Whirlpool_Heizung:off set Whirlpool setTemp 10
-```
-
-**Important:** After migration, `faultCode` will always read `255` (no fault). If your DOIF or automations check `[Whirlpool:faultCode] eq "255"` as a precondition for heating, this will now always pass — which is the correct behaviour.
-
----
-
 ## Debugging
 
 Enable verbose logging in FHEM:
