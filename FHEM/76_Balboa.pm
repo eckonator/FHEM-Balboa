@@ -202,6 +202,34 @@ sub Balboa_ParseStatusFrame($) {
 }
 
 ##############################################
+# Filter-Cycles-Frame (0A BF 23 / FF AF 23) parsen
+# Datensektion ist laut Protokoll exakt 8 Bytes, Index 0..7,
+# OHNE fuehrendes Byte (ccutrer/balboa_worldwide_app):
+#   0/1 Z1 Start h/m, 2/3 Z1 Dauer h/m,
+#   4   Bit7=Z2 enable + Bits0..6 Start-h, 5 Z2 Start-m,
+#   6/7 Z2 Dauer h/m
+##############################################
+sub Balboa_ParseFilterFrame($) {
+    my ($frame) = @_;
+    return undef if length($frame) < 9;
+    my $ftype = substr($frame, 2, 3);
+    return undef unless $ftype eq "\x0A\xBF\x23" || $ftype eq "\xFF\xAF\x23";
+
+    my $pl = substr($frame, 5, length($frame) - 7);
+    my @b  = unpack('C*', $pl);
+    return undef if scalar(@b) < 8;   # mind. 8 Datenbytes noetig
+
+    return {
+        f1_start => sprintf("%02d:%02d", $b[0], $b[1]),
+        f1_dur   => sprintf("%02d:%02d", $b[2], $b[3]),
+        f2_en    => ($b[4] & 0x80) ? 1 : 0,
+        f2_start => sprintf("%02d:%02d", ($b[4] & 0x7F), $b[5]),
+        f2_dur   => sprintf("%02d:%02d", $b[6], $b[7]),
+        raw      => join(' ', map { sprintf('%02X', $_) } @b),
+    };
+}
+
+##############################################
 # BlockingCall-Hintergrundprozess
 # Liest Status, sendet ggf. gequeuete Befehle,
 # liest dann erneut Status zur Bestaetigung.
@@ -247,19 +275,12 @@ sub Balboa_Poll_BG($) {
             $status = Balboa_ParseStatusFrame($frame);
         }
 
-        if ($fetch_filter && $f1_start eq "unknown"
-                && ($ftype eq "\x0A\xBF\x23" || $ftype eq "\xFF\xAF\x23")) {
-            my $pl = substr($frame, 5, length($frame) - 7);
-            my @b  = unpack('C*', $pl);
-            Log3($name, 4, "Balboa $name: filter response " . scalar(@b) . " Bytes: "
-                . join(' ', map { sprintf('%02X', $_) } @b));
-            my $o = (scalar(@b) >= 9 && $b[0] == 0x01) ? 1 : 0;
-            if (scalar(@b) >= $o + 8) {
-                $f1_start = sprintf("%02d:%02d", $b[$o],   $b[$o+1]);
-                $f1_dur   = sprintf("%02d:%02d", $b[$o+2], $b[$o+3]);
-                $f2_en    = ($b[$o+4] & 0x80) ? 1 : 0;
-                $f2_start = sprintf("%02d:%02d", ($b[$o+4] & 0x7F), $b[$o+5]);
-                $f2_dur   = sprintf("%02d:%02d", $b[$o+6], $b[$o+7]);
+        if ($fetch_filter && $f1_start eq "unknown") {
+            my $fc = Balboa_ParseFilterFrame($frame);
+            if ($fc) {
+                Log3($name, 4, "Balboa $name: filter response: $fc->{raw}");
+                ($f1_start, $f1_dur, $f2_en, $f2_start, $f2_dur) =
+                    @{$fc}{qw(f1_start f1_dur f2_en f2_start f2_dur)};
                 Log3($name, 3, "Balboa $name: Filterzyklen: F1=$f1_start/$f1_dur F2en=$f2_en $f2_start/$f2_dur");
             }
         }
@@ -334,6 +355,24 @@ sub Balboa_Poll_BG($) {
             my $new = Balboa_ParseStatusFrame($frame);
             if ($new) { $status = $new; last; }
         }
+
+        # setFilter wird vom Mainboard NICHT quittiert -> Config aktiv
+        # neu anfordern und einlesen, damit Readings die Realitaet zeigen
+        # und Poll_Done verifizieren kann.
+        if (grep { /^setFilter:/ } @valid_cmds) {
+            my $freq = Balboa_BuildMsg(pack('CCC', 0x0A, 0xBF, 0x22), pack('CCC', 0x01, 0x00, 0x00));
+            syswrite($sock, $freq);
+            for (1..8) {
+                my $frame = Balboa_ReadFrame($sock, 2);
+                next unless $frame;
+                my $fc = Balboa_ParseFilterFrame($frame);
+                next unless $fc;
+                ($f1_start, $f1_dur, $f2_en, $f2_start, $f2_dur) =
+                    @{$fc}{qw(f1_start f1_dur f2_en f2_start f2_dur)};
+                Log3($name, 3, "Balboa $name: Filterzyklen nach Set: F1=$f1_start/$f1_dur F2en=$f2_en $f2_start/$f2_dur");
+                last;
+            }
+        }
     }
 
     $sock->close();
@@ -404,7 +443,7 @@ sub Balboa_Poll_Done($) {
         my @retries;
 
         my $now = time();
-        for my $c (grep { /^(setTemp|toggle|setScale|setTime):/ } @sent) {
+        for my $c (grep { /^(setTemp|toggle|setScale|setTime|setFilter):/ } @sent) {
             if ($c =~ /^setTemp:(\d+):(\d+)$/) {
                 my ($raw, $deadline) = ($1, $2);
                 my $expected = sprintf("%.1f", $raw / 2.0 + $offset);
@@ -462,6 +501,34 @@ sub Balboa_Poll_Done($) {
                     }
                 } else {
                     Log3($name, 3, "Balboa $name: timeOfDay $expected bestaetigt");
+                }
+            }
+            elsif ($c =~ /^setFilter:(\d+):(\d+):(\d+):(\d+):(\d+):(\d+):(\d+):(\d+):(\d+)$/) {
+                my @x        = ($1, $2, $3, $4, $5, $6, $7, $8);
+                my $deadline = $9;
+                my $exp_f1s  = sprintf("%02d:%02d", $x[0], $x[1]);
+                my $exp_f1d  = sprintf("%02d:%02d", $x[2], $x[3]);
+                my $exp_f2en = ($x[4] & 0x80) ? 1 : 0;
+                my $exp_f2s  = sprintf("%02d:%02d", ($x[4] & 0x7F), $x[5]);
+                my $exp_f2d  = sprintf("%02d:%02d", $x[6], $x[7]);
+
+                my $ok = ($filter1Start    eq $exp_f1s
+                       && $filter1Duration eq $exp_f1d
+                       && "$filter2Enabled" eq "$exp_f2en"
+                       && $filter2Start    eq $exp_f2s
+                       && $filter2Duration eq $exp_f2d);
+
+                if (!$ok) {
+                    if ($now < $deadline) {
+                        push @retries, $c;  # enthaelt Deadline bereits
+                        my $min_left = int(($deadline - $now) / 60);
+                        Log3($name, 2, "Balboa $name: filterCycle erwartet F1=$exp_f1s/$exp_f1d F2en=$exp_f2en $exp_f2s/$exp_f2d "
+                            . "gelesen F1=$filter1Start/$filter1Duration F2en=$filter2Enabled $filter2Start/$filter2Duration -> Retry (noch ${min_left} Min)");
+                    } else {
+                        Log3($name, 2, "Balboa $name: filterCycle nach 15 Min Timeout aufgegeben");
+                    }
+                } else {
+                    Log3($name, 3, "Balboa $name: filterCycle bestaetigt F1=$exp_f1s/$exp_f1d F2en=$exp_f2en $exp_f2s/$exp_f2d");
                 }
             }
         }

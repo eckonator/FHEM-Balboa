@@ -701,11 +701,11 @@
           <div class="filter-fields">
             <div class="filter-field">
               <span class="filter-field-label">Start</span>
-              <input class="filter-input" type="time" id="f1start" value="00:00" oninput="updateEndTimes()">
+              <input class="filter-input" type="time" id="f1start" value="00:00" oninput="markFilterDirty()">
             </div>
             <div class="filter-field">
               <span class="filter-field-label">Dauer (HH:MM)</span>
-              <input class="filter-input" type="time" id="f1dur" value="00:30" oninput="updateEndTimes()">
+              <input class="filter-input" type="time" id="f1dur" value="00:30" oninput="markFilterDirty()">
             </div>
             <div class="filter-field">
               <span class="filter-field-label">Ende</span>
@@ -719,18 +719,18 @@
           <div class="filter-cycle-head">
             <span class="filter-cycle-label">Zyklus 2</span>
             <div class="seg-ctrl" style="flex:0;min-width:100px">
-              <button class="seg-btn" id="f2en-0" onclick="setF2Enable(0)">Aus</button>
-              <button class="seg-btn active" id="f2en-1" onclick="setF2Enable(1)">An</button>
+              <button class="seg-btn" id="f2en-0" onclick="userSetF2Enable(0)">Aus</button>
+              <button class="seg-btn active" id="f2en-1" onclick="userSetF2Enable(1)">An</button>
             </div>
           </div>
           <div class="filter-fields" id="f2fields">
             <div class="filter-field">
               <span class="filter-field-label">Start</span>
-              <input class="filter-input" type="time" id="f2start" value="00:00" oninput="updateEndTimes()">
+              <input class="filter-input" type="time" id="f2start" value="00:00" oninput="markFilterDirty()">
             </div>
             <div class="filter-field">
               <span class="filter-field-label">Dauer (HH:MM)</span>
-              <input class="filter-input" type="time" id="f2dur" value="00:30" oninput="updateEndTimes()">
+              <input class="filter-input" type="time" id="f2dur" value="00:30" oninput="markFilterDirty()">
             </div>
             <div class="filter-field">
               <span class="filter-field-label">Ende</span>
@@ -957,7 +957,21 @@
   }
 
   /* ═══════ FILTER CYCLES ═══════ */
-  let f2Enabled = 1;
+  let f2Enabled  = 1;
+  let filterDirty = false;   // true sobald der Nutzer Filterfelder bearbeitet;
+                             // verhindert dass der Poll die Eingabe ueberschreibt
+
+  /* Nutzer-Eingabe in einem Filterfeld: als "dirty" markieren */
+  function markFilterDirty() {
+    filterDirty = true;
+    updateEndTimes();
+  }
+
+  /* Nutzer-Klick auf Zyklus-2 An/Aus (markiert dirty) */
+  function userSetF2Enable(val) {
+    filterDirty = true;
+    setF2Enable(val);
+  }
 
   function setF2Enable(val) {
     f2Enabled = val;
@@ -989,6 +1003,7 @@
     try {
       await fhemSet(`set ${deviceName} filterCycle1 ${f1s} ${f1d}`);
       await fhemSet(`set ${deviceName} filterCycle2 ${f2Enabled} ${f2s} ${f2d}`);
+      filterDirty = false;   // gespeichert -> Poll darf wieder synchronisieren
       toast('Filterzeiten gespeichert', 'ok');
     } catch(e) { toast('Fehler', 'err'); }
   }
@@ -1126,14 +1141,18 @@
     document.getElementById('fil1Chip').style.display = f1run ? '' : 'none';
     document.getElementById('fil2Chip').style.display = f2run ? '' : 'none';
 
-    /* Filter cycle settings → prefill inputs */
-    const f1s = v('filter1Start');    if (f1s && f1s !== 'unknown') document.getElementById('f1start').value = f1s;
-    const f1d = v('filter1Duration'); if (f1d && f1d !== 'unknown') document.getElementById('f1dur').value   = f1d;
-    const f2s = v('filter2Start');    if (f2s && f2s !== 'unknown') document.getElementById('f2start').value = f2s;
-    const f2d = v('filter2Duration'); if (f2d && f2d !== 'unknown') document.getElementById('f2dur').value   = f2d;
-    const f2e = parseInt(v('filter2Enabled') ?? '1');
-    setF2Enable(f2e);
-    updateEndTimes();
+    /* Filter cycle settings → prefill inputs.
+       Nur wenn der Nutzer NICHT gerade editiert (filterDirty), sonst
+       wuerde der 10s-Poll die Eingabe ueberschreiben. */
+    if (!filterDirty) {
+      const f1s = v('filter1Start');    if (f1s && f1s !== 'unknown') document.getElementById('f1start').value = f1s;
+      const f1d = v('filter1Duration'); if (f1d && f1d !== 'unknown') document.getElementById('f1dur').value   = f1d;
+      const f2s = v('filter2Start');    if (f2s && f2s !== 'unknown') document.getElementById('f2start').value = f2s;
+      const f2d = v('filter2Duration'); if (f2d && f2d !== 'unknown') document.getElementById('f2dur').value   = f2d;
+      const f2e = parseInt(v('filter2Enabled') ?? '1');
+      setF2Enable(f2e);
+      updateEndTimes();
+    }
 
     document.getElementById('updateLine').textContent =
       'Zuletzt: ' + new Date().toLocaleTimeString('de-DE');
